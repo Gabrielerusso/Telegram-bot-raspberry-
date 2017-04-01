@@ -3,15 +3,16 @@
 /*----------DEFINE-----------*/
 define("IP_DELAY", 4);
 define("TEMP_DELAY", 15);
-define("TEMP_SOGLIA", 65);
-define("DDOS_DELAY", 60);
+define("TEMP_SOGLIA", 60);
+define("DDOS_DELAY", 120);
 define("POLLING_DELAY", 15);
+define("START_DELAY",5);
 
 /*---------TELEGRAM---------*/
-$TOKEN = "";
+$TOKEN = ""; /*your telegram token here*/
 $API_URL = "https://api.telegram.org/bot";
-$WHITELIST_ID[""] = TRUE;
-$CHAT_ID = ;
+$WHITELIST_ID[""] = TRUE; /*your id here (it's possible to add more than one)*/
+$CHAT_ID = 142345328; /*your chat id here*/
 
 /*------------VARIABLES---------*/
 $current_t0 = 0;
@@ -20,13 +21,40 @@ $OFFSET = -1;
 $maxtemp = -20;
 $mintemp = 100;
 $temp_flag = FALSE;
+$error_counter = 0;
+
+
+/*------------Start delay--------*/
+echo "Starting Raspberry bot";
+for($i=0; $i<START_DELAY ; $i++){
+	if( !($i % 3))
+		echo ".";
+	sleep(1);
+}
+echo "STARTED !\n";
+/*-------------------------------*/
 
 
 /*main loop*/
 while(1){
 
 	/*wait for incoming messages*/
-	$message = json_decode(file_get_contents($API_URL.$TOKEN."/getupdates?timeout=".POLLING_DELAY."&offset=$OFFSET"), TRUE);
+	$json_message = file_get_contents($API_URL.$TOKEN."/getupdates?timeout=".POLLING_DELAY."&offset=$OFFSET");
+	
+	/*check if there are errors*/
+	if($json_message == FALSE){
+		echo "\n[  ERRORE   ] Errore di connessione con il server\n";
+		$error_counter++;
+		if( $error_counter > 5 )
+			sleep(120);
+		else
+			sleep(6);
+		
+	} 
+	else
+		$error_counter = 0;
+	/*decode the jeson output to string*/
+	$message = json_decode($json_message, TRUE);
 
 	/*If the message isn't empty continue, else wait again*/
 	if( isset($message["result"][0]) ){
@@ -96,7 +124,8 @@ while(1){
 		}
 		unset($USER_ID);
 	}
-
+	
+	/*check the system temperature and update the max/min if necessary*/
 	check_temp($current_t1);
 
 
@@ -125,10 +154,12 @@ function select_function(){
 		case "/riavvia":
 			curl_post("Riavvio..." , $USER_CHAT_ID);
 			echo "Restart\n";
+			exec("sudo shutdown -r");
 			break;
 		case "/spegni":
 			curl_post("Spengo..." , $USER_CHAT_ID);
 			echo "Shutdown\n";
+			exec("sudo shutdown now");
 			break;
 		case "/start":
 			curl_post("Bot avviato" , $USER_CHAT_ID);
@@ -229,7 +260,7 @@ function getip(&$e_IP = NULL , &$i_IP = NULL, &$t0 = 0){
 		$t0 = time();
 		$e_IP = exec("curl -s ifconfig.co");
 	}
-	$i_IP = exec(' ifconfig | grep -A1  "eth0" | grep -o "inet [0-9]\{1,\}.[0-9]\{1,\}.[0-9]\{1,\}.[0-9]\{1,\}" | grep -o "[0-9]\{1,\}.[0-9]\{1,\}.[0-9]\{1,\}.[0-9]\{1,\}"');
+	$i_IP = exec(' ifconfig | grep -A1  "eth0" | grep -o "inet addr:[0-9]\{1,\}.[0-9]\{1,\}.[0-9]\{1,\}.[0-9]\{1,\}" | grep -o "[0-9]\{1,\}.[0-9]\{1,\}.[0-9]\{1,\}.[0-9]\{1,\}"');
 }
 
 
@@ -241,3 +272,4 @@ function gettemp(){
 
 ?>
 
+Gabriele Russo 2017
