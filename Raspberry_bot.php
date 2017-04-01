@@ -12,7 +12,7 @@ define("START_DELAY",5);
 $TOKEN = ""; /*your telegram token here*/
 $API_URL = "https://api.telegram.org/bot";
 $WHITELIST_ID[""] = TRUE; /*your id here (it's possible to add more than one)*/
-$CHAT_ID = 142345328; /*your chat id here*/
+$CHAT_ID = ; /*your chat id here*/
 
 /*------------VARIABLES---------*/
 $current_t0 = 0;
